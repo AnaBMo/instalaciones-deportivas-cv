@@ -216,3 +216,29 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Datos sensibles (NO subir a GitHub)
+data_local/
+*.csv
+*.json
+instalaciones*.js
+
+# Variables de entorno
+.env
+.env.local
+
+# Base de datos local
+*.db
+*.sqlite3
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# VS Code
+.vscode/
