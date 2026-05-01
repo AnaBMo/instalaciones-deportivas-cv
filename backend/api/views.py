@@ -33,48 +33,79 @@ class InstalacionViewSet(viewsets.ViewSet):
         self.collection = self.db['instalaciones']
     
     def list(self, request):
-        """
-        GET /api/instalaciones/
-        Lista todas las instalaciones con filtros opcionales
-        """
-        # Construir query de filtros
-        query = {}
+        """Lista instalaciones con filtros opcionales"""
+        # Obtener parámetros de filtro
+        tipo = request.query_params.get('tipo')
+        municipio = request.query_params.get('municipio')
+        provincia = request.query_params.get('provincia')
+        search = request.query_params.get('search')
+        categoria = request.query_params.get('categoria')
         
-        # Filtro por tipo
-        if 'tipo' in request.query_params:
-            query['tipo'] = request.query_params['tipo']
+        # Construir filtro de MongoDB
+        filtro = {}
         
-        # Filtro por municipio
-        if 'municipio' in request.query_params:
-            query['denom_municipio'] = {
-                '$regex': request.query_params['municipio'],
-                '$options': 'i'
-            }
+        if tipo:
+            filtro['tipo'] = tipo
+        if municipio:
+            filtro['denom_municipio'] = {'$regex': municipio, '$options': 'i'}
+        if provincia:
+            filtro['denom_provincia'] = {'$regex': provincia, '$options': 'i'}
+        if search:
+            filtro['$or'] = [
+                {'nombre': {'$regex': search, '$options': 'i'}},
+                {'direccion': {'$regex': search, '$options': 'i'}}
+            ]
+        # AÑADIR: Filtro por categoría
+        if categoria:
+            filtro['categorias'] = {'$regex': categoria, '$options': 'i'}
         
-        # Filtro por provincia
-        if 'provincia' in request.query_params:
-            query['denom_provincia'] = {
-                '$regex': request.query_params['provincia'],
-                '$options': 'i'
-            }
+        # Contar total con filtros
+        total_count = self.collection.count_documents(filtro)
         
-        # Búsqueda por nombre
-        if 'search' in request.query_params:
-            query['nombre'] = {
-                '$regex': request.query_params['search'],
-                '$options': 'i'
-            }
+        # Paginación manual
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 50))
+        skip = (page - 1) * page_size
         
-        # Obtener datos
-        instalaciones = list(self.collection.find(query).limit(100))
+        # Calcular total de páginas
+        total_pages = (total_count + page_size - 1) // page_size
+        
+        # Ejecutar query
+        cursor = self.collection.find(filtro).skip(skip).limit(page_size)
+        resultados = list(cursor)
         
         # Convertir ObjectId a string
-        for inst in instalaciones:
-            inst['_id'] = str(inst['_id'])
+        for resultado in resultados:
+            resultado['_id'] = str(resultado['_id'])
+        
+        # Calcular URLs de navegación
+        base_url = request.build_absolute_uri().split('?')[0]
+        
+        # Preservar parámetros de filtro en next/previous
+        params = request.query_params.copy()
+        
+        # Next
+        if page < total_pages:
+            params['page'] = page + 1
+            next_page = f"{base_url}?{params.urlencode()}"
+        else:
+            next_page = None
+        
+        # Previous
+        if page > 1:
+            params['page'] = page - 1
+            prev_page = f"{base_url}?{params.urlencode()}"
+        else:
+            prev_page = None
         
         return Response({
-            'count': len(instalaciones),
-            'results': instalaciones
+            'count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages,
+            'next': next_page,
+            'previous': prev_page,
+            'results': resultados
         })
     
     def retrieve(self, request, pk=None):

@@ -176,6 +176,30 @@ def inferir_categorias_del_nombre(nombre):
     
     return []
 
+def normalizar_municipio(municipio):
+    """Normaliza el nombre del municipio"""
+    if not municipio:
+        return None
+    
+    # Mapeo para públicas (que vienen en mayúsculas con variaciones)
+    NORMALIZACION = {
+        'ELX': 'Elx',
+        'ELCHE': 'Elx',
+        'ALACANT': 'Alicante',
+        'ALICANTE': 'Alicante',
+        'VALÈNCIA': 'Valencia',
+        'VALENCIA': 'Valencia',
+        'CASTELLÓ DE LA PLANA': 'Castelló de la Plana',
+        'CASTELLÓN DE LA PLANA': 'Castelló de la Plana',
+    }
+    
+    municipio_upper = municipio.upper().strip()
+    
+    if municipio_upper in NORMALIZACION:
+        return NORMALIZACION[municipio_upper]
+    
+    # Si no está en el mapeo, devolver capitalizado
+    return municipio.title()
 
 def importar_publicas():
     """Importa instalaciones públicas desde JSON oficial"""
@@ -241,7 +265,7 @@ def importar_publicas():
                 'cod_provincia': item.get('COD_PROVINCIA'),
                 'denom_provincia': item.get('DENOM_PROVINCIA'),
                 'cod_municipio': item.get('COD_MUNICIPIO'),
-                'denom_municipio': item.get('DENOM_MUNICIPIO'),
+                'denom_municipio': normalizar_municipio(item.get('DENOM_MUNICIPIO', '')),
                 'tipo': 'publico',
                 'categorias': categorias,
                 'deportes_raw': deportes_raw,
@@ -283,7 +307,7 @@ def importar_privadas():
     for csv_path in csvs_privadas:
         print(f"\n📖 Procesando: {csv_path.name}")
         
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:  # ← Cambiado a utf-8-sig
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
             documentos = []
             errores = 0
@@ -319,7 +343,26 @@ def importar_privadas():
                         except:
                             total_reviews = None
                     else:
-                        total_reviews = None
+                            total_reviews = None
+                    
+                    # Inferir municipio del nombre del archivo si no se encuentra en dirección
+                    municipio_detectado = extraer_municipio(row.get('direccion', ''))
+                    
+                    # Si no se detecta, usar el nombre del archivo CSV
+                    if not municipio_detectado:
+                        nombre_archivo = csv_path.stem.lower()  # 'instalaciones_privadas_elche'
+                        if 'elche' in nombre_archivo or 'elx' in nombre_archivo:
+                            municipio_detectado = 'Elx'
+                        elif 'alicante' in nombre_archivo:
+                            municipio_detectado = 'Alicante'
+                        elif 'gandia' in nombre_archivo:
+                            municipio_detectado = 'Gandia'
+                        elif 'finestrat' in nombre_archivo:
+                            municipio_detectado = 'Finestrat'
+                        elif 'ondara' in nombre_archivo:
+                            municipio_detectado = 'Ondara'
+                        elif 'cocentaina' in nombre_archivo:
+                            municipio_detectado = 'Cocentaina'
                     
                     documento = {
                         'nombre': row.get('nombre', 'Sin nombre'),
@@ -333,7 +376,7 @@ def importar_privadas():
                         'total_reviews': total_reviews,
                         'place_id': row.get('place_id'),
                         'tipos_google': row.get('tipos'),
-                        'denom_municipio': extraer_municipio(row.get('direccion', '')),
+                        'denom_municipio': municipio_detectado,
                         'denom_provincia': 'ALICANTE',
                     }
                     
@@ -488,17 +531,50 @@ def importar_campings():
 
 
 def extraer_municipio(direccion):
-    """Intenta extraer el municipio de la dirección"""
-    municipios_conocidos = [
-        'Alicante', 'Elche', 'Elx', 'Sant Vicent del Raspeig', 
-        'Sant Joan d\'Alacant', 'San Fulgencio', 'Santa Pola',
-        'Finestrat', 'Gandia', 'Ondara', 'Cocentaina',
-        'Crevillent', 'Novelda', 'Torrevieja'
-    ]
+    """Intenta extraer y normalizar el municipio de la dirección"""
     
-    for municipio in municipios_conocidos:
-        if municipio.lower() in direccion.lower():
-            return municipio
+    # Mapeo de variaciones → nombre normalizado
+    MUNICIPIOS_NORMALIZADOS = {
+        # Elche/Elx (todas las variaciones → Elx)
+        'elche': 'Elx',
+        'elx': 'Elx',
+        
+        # Alicante/Alacant
+        'alicante': 'Alicante',
+        'alacant': 'Alicante',
+        
+        # Valencia/València
+        'valencia': 'Valencia',
+        'valència': 'Valencia',
+        
+        # Otros municipios importantes
+        'sant vicent del raspeig': 'Sant Vicent del Raspeig',
+        'san vicente del raspeig': 'Sant Vicent del Raspeig',
+        'sant joan d\'alacant': 'Sant Joan d\'Alacant',
+        'san juan de alicante': 'Sant Joan d\'Alacant',
+        'gandia': 'Gandia',
+        'gandía': 'Gandia',
+        'finestrat': 'Finestrat',
+        'ondara': 'Ondara',
+        'cocentaina': 'Cocentaina',
+        'crevillent': 'Crevillent',
+        'novelda': 'Novelda',
+        'torrevieja': 'Torrevieja',
+        'santa pola': 'Santa Pola',
+        'benidorm': 'Benidorm',
+        'denia': 'Denia',
+        'dénia': 'Denia',
+        'alcoy': 'Alcoy',
+        'alcoi': 'Alcoy',
+        'orihuela': 'Orihuela',
+    }
+    
+    direccion_lower = direccion.lower()
+    
+    # Buscar coincidencia
+    for variacion, normalizado in MUNICIPIOS_NORMALIZADOS.items():
+        if variacion in direccion_lower:
+            return normalizado
     
     return None
 
