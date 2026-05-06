@@ -10,6 +10,8 @@ from pymongo import MongoClient
 from django.conf import settings
 from bson import ObjectId
 import json
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from datetime import datetime
 
 
 class InstalacionPagination(PageNumberPagination):
@@ -23,6 +25,7 @@ class InstalacionViewSet(viewsets.ViewSet):
     API endpoint para instalaciones deportivas
     Usa MongoDB directamente con pymongo
     """
+    permission_classes = [IsAuthenticatedOrReadOnly] 
     pagination_class = InstalacionPagination
     
     def __init__(self, *args, **kwargs):
@@ -161,3 +164,195 @@ class InstalacionViewSet(viewsets.ViewSet):
         }
         
         return Response(stats)
+    
+    def create(self, request):
+        """
+        POST /api/instalaciones/
+        Crear nueva instalación
+        Requiere autenticación
+        """
+        try:
+            data = request.data.copy()
+            
+            # Validar campos requeridos
+            campos_requeridos = ['nombre', 'direccion', 'latitud', 'longitud', 'tipo']
+            for campo in campos_requeridos:
+                if campo not in data:
+                    return Response(
+                        {'error': f'El campo {campo} es requerido'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Agregar metadata
+            data['creado_por'] = request.user.username
+            data['creado_por_id'] = request.user.id
+            data['fecha_creacion'] = datetime.now()
+            
+            # Insertar en MongoDB
+            result = self.collection.insert_one(data)
+            
+            # Recuperar el documento creado
+            instalacion = self.collection.find_one({'_id': result.inserted_id})
+            instalacion['_id'] = str(instalacion['_id'])
+            
+            return Response(instalacion, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def update(self, request, pk=None):
+        """
+        PUT /api/instalaciones/{id}/
+        Actualizar instalación completa
+        Requiere autenticación
+        """
+        try:
+            from bson import ObjectId
+            obj_id = ObjectId(pk)
+            
+            # Verificar que existe
+            instalacion = self.collection.find_one({'_id': obj_id})
+            if not instalacion:
+                return Response(
+                    {'error': 'Instalación no encontrada'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Preparar datos
+            data = request.data.copy()
+            data['modificado_por'] = request.user.username
+            data['modificado_por_id'] = request.user.id
+            data['fecha_modificacion'] = datetime.now()
+            
+            # Actualizar
+            result = self.collection.update_one(
+                {'_id': obj_id},
+                {'$set': data}
+            )
+            
+            if result.modified_count > 0:
+                # Recuperar documento actualizado
+                instalacion = self.collection.find_one({'_id': obj_id})
+                instalacion['_id'] = str(instalacion['_id'])
+                return Response(instalacion)
+            else:
+                return Response(
+                    {'error': 'No se realizaron cambios'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def destroy(self, request, pk=None):
+        """
+        DELETE /api/instalaciones/{id}/
+        Elimina una instalación (con backup previo)
+        Requiere autenticación
+        """
+        try:
+            from bson import ObjectId
+            obj_id = ObjectId(pk)
+            
+            # Buscar la instalación
+            instalacion = self.collection.find_one({'_id': obj_id})
+            
+            if not instalacion:
+                return Response(
+                    {'error': 'Instalación no encontrada'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # BACKUP: Guardar en colección de eliminados
+            eliminados_collection = self.db['instalaciones_eliminadas']
+            
+            backup_data = {
+                **instalacion,  # Todos los datos originales
+                'eliminado_por': request.user.username,
+                'eliminado_por_id': request.user.id,
+                'fecha_eliminacion': datetime.now(),
+                'razon': request.data.get('razon', 'No especificada'),
+                'instalacion_id_original': str(instalacion['_id'])
+            }
+            
+            # Guardar backup
+            eliminados_collection.insert_one(backup_data)
+            
+            # Ahora sí eliminar
+            result = self.collection.delete_one({'_id': obj_id})
+            
+            if result.deleted_count > 0:
+                return Response(
+                    {
+                        'message': 'Instalación eliminada correctamente',
+                        'backup_guardado': True,
+                        'eliminado_por': request.user.username
+                    },
+                    status=status.HTTP_200_OK
+                )
+            else:
+                return Response(
+                    {'error': 'No se pudo eliminar la instalación'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+    @action(detail=False, methods=['get'])
+    def by_bounds(self, request):
+        """
+        GET /api/instalaciones/by_bounds/
+        Obtener instalaciones dentro de un área rectangular
+        Parámetros: south, west, north, east (coordenadas)
+        """
+        try:
+            south = float(request.query_params.get('south'))
+            west = float(request.query_params.get('west'))
+            north = float(request.query_params.get('north'))
+            east = float(request.query_params.get('east'))
+            tipo = request.query_params.get('tipo')
+            search = request.query_params.get('search')
+            
+            # Construir filtro
+            filtro = {
+                'latitud': {'$gte': south, '$lte': north},
+                'longitud': {'$gte': west, '$lte': east}
+            }
+            
+            if tipo:
+                filtro['tipo'] = tipo
+            
+            if search:
+                filtro['$or'] = [
+                    {'nombre': {'$regex': search, '$options': 'i'}},
+                    {'direccion': {'$regex': search, '$options': 'i'}}
+                ]
+            
+            # Limitar a 500 resultados máximo
+            instalaciones = list(self.collection.find(filtro).limit(500))
+            
+            # Convertir ObjectId a string
+            for inst in instalaciones:
+                inst['_id'] = str(inst['_id'])
+            
+            return Response({
+                'count': len(instalaciones),
+                'results': instalaciones,
+                'limited': len(instalaciones) == 500
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
