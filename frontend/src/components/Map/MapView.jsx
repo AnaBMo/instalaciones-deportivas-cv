@@ -102,8 +102,8 @@ function MapEventHandler({ filtros, onInstallationsLoad }) {
     };
 
     // Aplicar filtros
-    if (filtros.tipo) {
-      params.tipo = filtros.tipo;
+    if (filtros.tipos && filtros.tipos.length > 0) {
+        params.tipo = filtros.tipos.join(',');
     }
     if (filtros.search) {
       params.search = filtros.search;

@@ -20,6 +20,53 @@ class InstalacionPagination(PageNumberPagination):
     max_page_size = 100
 
 
+def aplicar_filtro_tipos_categorias(filtro, tipo, categorias):
+    """
+    Aplica la lógica combinada de tipos + categorías al filtro.
+    Los tipos sin categorías (publico, camping) pasan directo.
+    Los tipos con categorías (privado, tienda) se filtran por categoría.
+    """
+    if tipo:
+        tipos_lista = [t.strip() for t in tipo.split(',')]
+        categorias_lista = [cat.strip() for cat in categorias.split(',')] if categorias else []
+
+        if categorias_lista:
+            tipos_con_categorias = [t for t in tipos_lista if t in ('privado', 'tienda')]
+            tipos_sin_categorias = [t for t in tipos_lista if t not in ('privado', 'tienda')]
+
+            condiciones = []
+
+            if tipos_con_categorias:
+                condiciones.append({
+                    'tipo': {'$in': tipos_con_categorias} if len(tipos_con_categorias) > 1 else tipos_con_categorias[0],
+                    'categorias': {'$in': categorias_lista}
+                })
+
+            if tipos_sin_categorias:
+                condiciones.append({
+                    'tipo': {'$in': tipos_sin_categorias} if len(tipos_sin_categorias) > 1 else tipos_sin_categorias[0]
+                })
+
+            if len(condiciones) == 1:
+                filtro.update(condiciones[0])
+            elif len(condiciones) > 1:
+                if '$or' in filtro:
+                    filtro['$and'] = [
+                        {'$or': filtro.pop('$or')},
+                        {'$or': condiciones}
+                    ]
+                else:
+                    filtro['$or'] = condiciones
+        else:
+            if len(tipos_lista) == 1:
+                filtro['tipo'] = tipos_lista[0]
+            else:
+                filtro['tipo'] = {'$in': tipos_lista}
+    elif categorias:
+        categorias_lista = [cat.strip() for cat in categorias.split(',')]
+        filtro['categorias'] = {'$in': categorias_lista}
+
+
 class InstalacionViewSet(viewsets.ViewSet):
     """
     API endpoint para instalaciones deportivas
@@ -37,19 +84,15 @@ class InstalacionViewSet(viewsets.ViewSet):
     
     def list(self, request):
         """Lista instalaciones con filtros opcionales"""
-        # Obtener parámetros de filtro
         tipo = request.query_params.get('tipo')
         municipio = request.query_params.get('municipio')
         provincia = request.query_params.get('provincia')
         search = request.query_params.get('search')
         categoria = request.query_params.get('categoria')
-        categorias = request.query_params.get('categorias')  # ⬅️ NUEVO: Múltiples categorías
+        categorias = request.query_params.get('categorias')
         
-        # Construir filtro de MongoDB
         filtro = {}
         
-        if tipo:
-            filtro['tipo'] = tipo
         if municipio:
             filtro['denom_municipio'] = {'$regex': municipio, '$options': 'i'}
         if provincia:
@@ -60,13 +103,11 @@ class InstalacionViewSet(viewsets.ViewSet):
                 {'direccion': {'$regex': search, '$options': 'i'}}
             ]
         # Filtro por categoría única (legacy)
-        if categoria:
+        if categoria and not categorias:
             filtro['categorias'] = {'$regex': categoria, '$options': 'i'}
         
-        # ⬅️ NUEVO: Filtro por múltiples categorías
-        if categorias:
-            categorias_lista = [cat.strip() for cat in categorias.split(',')]
-            filtro['categorias'] = {'$in': categorias_lista}
+        # Lógica combinada de tipos + categorías
+        aplicar_filtro_tipos_categorias(filtro, tipo, categorias)
         
         # Contar total con filtros
         total_count = self.collection.count_documents(filtro)
@@ -328,16 +369,13 @@ class InstalacionViewSet(viewsets.ViewSet):
             east = float(request.query_params.get('east'))
             tipo = request.query_params.get('tipo')
             search = request.query_params.get('search')
-            categorias = request.query_params.get('categorias')  # ⬅️ NUEVO
+            categorias = request.query_params.get('categorias')
             
-            # Construir filtro
+            # Construir filtro base (bounds)
             filtro = {
                 'latitud': {'$gte': south, '$lte': north},
                 'longitud': {'$gte': west, '$lte': east}
             }
-            
-            if tipo:
-                filtro['tipo'] = tipo
             
             if search:
                 filtro['$or'] = [
@@ -345,10 +383,8 @@ class InstalacionViewSet(viewsets.ViewSet):
                     {'direccion': {'$regex': search, '$options': 'i'}}
                 ]
             
-            # ⬅️ NUEVO: Filtro por categorías
-            if categorias:
-                categorias_lista = [cat.strip() for cat in categorias.split(',')]
-                filtro['categorias'] = {'$in': categorias_lista}
+            # Lógica combinada de tipos + categorías
+            aplicar_filtro_tipos_categorias(filtro, tipo, categorias)
             
             # Limitar a 500 resultados máximo
             instalaciones = list(self.collection.find(filtro).limit(500))

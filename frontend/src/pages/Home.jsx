@@ -13,7 +13,7 @@ function Home() {
   
   // Filtros
   const [filtros, setFiltros] = useState({
-    tipo: '',
+    tipos: [],
     search: '',
     categorias: [],
   });
@@ -90,42 +90,40 @@ function Home() {
   };
 
   // Función para seleccionar/deseleccionar todas las categorías
-  const toggleTodasCategorias = () => {
-    const categoriasActuales = filtros.tipo === 'privado' 
+  const toggleTodasCategorias = (tipoCategoria) => {
+    const categoriasDelTipo = tipoCategoria === 'privado' 
       ? CATEGORIAS_PRIVADAS.map(c => c.id)
       : CATEGORIAS_TIENDAS.map(c => c.id);
 
-    const todasSeleccionadas = categoriasActuales.every(cat => 
+    const todasSeleccionadas = categoriasDelTipo.every(cat => 
       filtros.categorias.includes(cat)
     );
 
     if (todasSeleccionadas) {
-      // Deseleccionar todas
       setFiltros(prev => ({
         ...prev,
-        categorias: prev.categorias.filter(c => !categoriasActuales.includes(c))
+        categorias: prev.categorias.filter(c => !categoriasDelTipo.includes(c))
       }));
     } else {
-      // Seleccionar todas
       setFiltros(prev => ({
         ...prev,
-        categorias: [...new Set([...prev.categorias, ...categoriasActuales])]
+        categorias: [...new Set([...prev.categorias, ...categoriasDelTipo])]
       }));
     }
   };
 
-  // Obtener categorías según el tipo seleccionado
-  const categoriasActuales = filtros.tipo === 'privado' 
-    ? CATEGORIAS_PRIVADAS 
-    : filtros.tipo === 'tienda' 
-    ? CATEGORIAS_TIENDAS 
-    : [];
+  // Mostrar secciones de categorías según tipos seleccionados
+  const mostrarCategoriasPrivadas = filtros.tipos.includes('privado');
+  const mostrarCategoriasTiendas = filtros.tipos.includes('tienda');
+  const mostrarFiltrosCategorias = mostrarCategoriasPrivadas || mostrarCategoriasTiendas;
 
-  const mostrarFiltrosCategorias = filtros.tipo === 'privado' || filtros.tipo === 'tienda';
-
-  // Verificar si todas las categorías están seleccionadas
-  const todasCategoriasSeleccionadas = categoriasActuales.length > 0 && 
-    categoriasActuales.every(cat => filtros.categorias.includes(cat.id));
+  // Verificar si todas están seleccionadas (por sección)
+  const todasPrivadasSeleccionadas = CATEGORIAS_PRIVADAS.every(cat => 
+    filtros.categorias.includes(cat.id)
+  );
+  const todasTiendasSeleccionadas = CATEGORIAS_TIENDAS.every(cat => 
+    filtros.categorias.includes(cat.id)
+  );
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -216,7 +214,7 @@ function Home() {
         {/* BUSCADOR */}
         <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
           <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-             BUSCAR
+            BUSCAR
           </div>
           <input
             type="text"
@@ -246,62 +244,41 @@ function Home() {
         {/* FILTRO POR TIPO */}
         <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
           <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-             TIPO
+            TIPO
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: '', categorias: [] })}
+              onClick={() => {
+                const todosTipos = ['publico', 'privado', 'tienda', 'camping'];
+                setFiltros({ ...filtros, tipos: todosTipos, categorias: [] });
+                setCategoriasExpanded(true);
+              }}
               style={{
                 padding: '8px 14px',
                 border: '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === '' ? 'white' : 'white',
-                color: filtros.tipo === '' ? '#51555a' : '#51555a',
+                background: filtros.tipos.length === 4 ? '#3643ba' : 'white',
+                color: filtros.tipos.length === 4 ? '#e4e9f1' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
-                boxShadow: filtros.tipo === '' ? '0 2px 4px rgba(0,0,0,0.1), inset 0 -2px 4px rgba(0,0,0,0.05)' : 'none',
                 transition: 'all 0.2s',
               }}
             >
               ✓ Todas
             </button>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'publico', categorias: [] })}
-              style={{
-                padding: '8px 14px',
-                border: filtros.tipo === 'publico' ? '2px solid #3643ba' : '2px solid #e5e7eb',
-                borderRadius: '6px',
-                background: filtros.tipo === 'publico' ? '#3643ba' : 'white',
-                color: filtros.tipo === 'publico' ? '#e4e9f1' : '#51555a',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                flex: '1 1 calc(50% - 3px)',
-                transition: 'all 0.2s',
-              }}
-            >
-               Públicas ({porTipo.publico || 0})
-            </button>
-            <button
               onClick={() => {
-                const nuevoTipo = filtros.tipo === 'privado' ? '' : 'privado';
-                setFiltros({ 
-                  ...filtros, 
-                  tipo: nuevoTipo,
-                  categorias: nuevoTipo === 'privado' ? filtros.categorias : []
-                });
-                if (nuevoTipo === 'privado') {
-                  setCategoriasExpanded(true);
-                }
+                setFiltros({ ...filtros, tipos: [], categorias: [] });
+                setCategoriasExpanded(false);
               }}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === 'privado' ? '2px solid #3643ba' : '2px solid #e5e7eb',
+                border: '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === 'privado' ? '#3643ba' : 'white',
-                color: filtros.tipo === 'privado' ? '#e4e9f1' : '#51555a',
+                background: 'white',
+                color: '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
@@ -309,52 +286,58 @@ function Home() {
                 transition: 'all 0.2s',
               }}
             >
-               Privadas ({porTipo.privado || 0})
+              ↺ Resetear
             </button>
-            <button
-              onClick={() => {
-                const nuevoTipo = filtros.tipo === 'tienda' ? '' : 'tienda';
-                setFiltros({ 
-                  ...filtros, 
-                  tipo: nuevoTipo,
-                  categorias: nuevoTipo === 'tienda' ? filtros.categorias : []
-                });
-                if (nuevoTipo === 'tienda') {
-                  setCategoriasExpanded(true);
-                }
-              }}
-              style={{
-                padding: '8px 14px',
-                border: filtros.tipo === 'tienda' ? '2px solid #3643ba' : '2px solid #e5e7eb',
-                borderRadius: '6px',
-                background: filtros.tipo === 'tienda' ? '#3643ba' : 'white',
-                color: filtros.tipo === 'tienda' ? '#e4e9f1' : '#51555a',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                flex: '1 1 calc(50% - 3px)',
-                transition: 'all 0.2s',
-              }}
-            >
-               Tiendas ({porTipo.tienda || 0})
-            </button>
-            <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'camping', categorias: [] })}
-              style={{
-                padding: '8px 14px',
-                border: filtros.tipo === 'camping' ? '2px solid #3643ba' : '2px solid #e5e7eb',
-                borderRadius: '6px',
-                background: filtros.tipo === 'camping' ? '#3643ba' : 'white',
-                color: filtros.tipo === 'camping' ? '#e4e9f1' : '#51555a',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                flex: '1 1 calc(50% - 3px)',
-                transition: 'all 0.2s',
-              }}
-            >
-               Campings ({porTipo.camping || 0})
-            </button>
+            {['publico', 'privado', 'tienda', 'camping'].map(tipo => {
+              const isActive = filtros.tipos.includes(tipo);
+              const labels = {
+                publico: 'Públicas',
+                privado: 'Privadas',
+                tienda: 'Tiendas',
+                camping: 'Campings',
+              };
+              return (
+                <button
+                  key={tipo}
+                  onClick={() => {
+                    setFiltros(prev => {
+                      const nuevosTipos = prev.tipos.includes(tipo)
+                        ? prev.tipos.filter(t => t !== tipo)
+                        : [...prev.tipos, tipo];
+                      
+                      let nuevasCategorias = [...prev.categorias];
+                      if (!nuevosTipos.includes('privado')) {
+                        const idsPrivadas = CATEGORIAS_PRIVADAS.map(c => c.id);
+                        nuevasCategorias = nuevasCategorias.filter(c => !idsPrivadas.includes(c));
+                      }
+                      if (!nuevosTipos.includes('tienda')) {
+                        const idsTiendas = CATEGORIAS_TIENDAS.map(c => c.id);
+                        nuevasCategorias = nuevasCategorias.filter(c => !idsTiendas.includes(c));
+                      }
+                      
+                      return { ...prev, tipos: nuevosTipos, categorias: nuevasCategorias };
+                    });
+                    if (tipo === 'privado' || tipo === 'tienda') {
+                      setCategoriasExpanded(true);
+                    }
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    border: isActive ? '2px solid #3643ba' : '2px solid #e5e7eb',
+                    borderRadius: '6px',
+                    background: isActive ? '#3643ba' : 'white',
+                    color: isActive ? '#e4e9f1' : '#51555a',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    flex: '1 1 calc(50% - 3px)',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {labels[tipo]} ({porTipo[tipo] || 0})
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -370,7 +353,7 @@ function Home() {
               }}
             >
               <div style={{ fontWeight: '700', fontSize: '13px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                {filtros.tipo === 'privado' ? ' CATEGORÍAS PRIVADAS' : ' CATEGORÍAS TIENDAS'}
+                CATEGORÍAS
               </div>
               <button
                 onClick={() => setCategoriasExpanded(!categoriasExpanded)}
@@ -395,57 +378,116 @@ function Home() {
                 transition: categoriasExpanded ? 'max-height 0.5s ease' : 'max-height 0.3s ease',
               }}
             >
-              <button
-                onClick={toggleTodasCategorias}
-                style={{
-                  width: '100%',
-                  padding: '8px 14px',
-                  border: '2px solid #d1d5db',
-                  borderRadius: '6px',
-                  background: todasCategoriasSeleccionadas ? '#f3f4f6' : 'white',
-                  color: todasCategoriasSeleccionadas ? '#3643ba' : '#51555a',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  marginBottom: '8px',
-                  boxShadow: todasCategoriasSeleccionadas ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                  transition: 'all 0.2s',
-                }}
-              >
-                ✓ Todas
-              </button>
+              {/* Categorías Privadas */}
+              {mostrarCategoriasPrivadas && (
+                <div style={{ marginBottom: mostrarCategoriasTiendas ? '12px' : '0' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '6px' }}>
+                    Privadas
+                  </div>
+                  <button
+                    onClick={() => toggleTodasCategorias('privado')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 14px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      background: todasPrivadasSeleccionadas ? '#f3f4f6' : 'white',
+                      color: todasPrivadasSeleccionadas ? '#3643ba' : '#51555a',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      boxShadow: todasPrivadasSeleccionadas ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    ✓ Todas
+                  </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {CATEGORIAS_PRIVADAS.map(cat => {
+                      const isActive = filtros.categorias.includes(cat.id);
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => toggleCategoria(cat.id)}
+                          style={{
+                            width: 'calc(50% - 2px)',
+                            padding: '6px 10px',
+                            border: isActive ? '2px solid #d1d5db' : '2px solid #e5e7eb',
+                            borderRadius: '6px',
+                            background: isActive ? '#f3f4f6' : 'white',
+                            color: isActive ? '#3643ba' : '#51555a',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {cat.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                {categoriasActuales.map(cat => {
-                  const isActive = filtros.categorias.includes(cat.id);
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => toggleCategoria(cat.id)}
-                      style={{
-                        width: 'calc(50% - 2px)',
-                        padding: '6px 10px',
-                        border: isActive ? '2px solid #d1d5db' : '2px solid #e5e7eb',
-                        borderRadius: '6px',
-                        background: isActive ? '#f3f4f6' : 'white',
-                        color: isActive ? '#3643ba' : '#51555a',
-                        cursor: 'pointer',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      {cat.nombre}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Categorías Tiendas */}
+              {mostrarCategoriasTiendas && (
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '6px' }}>
+                    Tiendas
+                  </div>
+                  <button
+                    onClick={() => toggleTodasCategorias('tienda')}
+                    style={{
+                      width: '100%',
+                      padding: '8px 14px',
+                      border: '2px solid #d1d5db',
+                      borderRadius: '6px',
+                      background: todasTiendasSeleccionadas ? '#f3f4f6' : 'white',
+                      color: todasTiendasSeleccionadas ? '#3643ba' : '#51555a',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      marginBottom: '8px',
+                      boxShadow: todasTiendasSeleccionadas ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    ✓ Todas
+                  </button>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                    {CATEGORIAS_TIENDAS.map(cat => {
+                      const isActive = filtros.categorias.includes(cat.id);
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => toggleCategoria(cat.id)}
+                          style={{
+                            width: 'calc(50% - 2px)',
+                            padding: '6px 10px',
+                            border: isActive ? '2px solid #d1d5db' : '2px solid #e5e7eb',
+                            borderRadius: '6px',
+                            background: isActive ? '#f3f4f6' : 'white',
+                            color: isActive ? '#3643ba' : '#51555a',
+                            cursor: 'pointer',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          {cat.nombre}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
-
-        
       </div>
 
       {/* MAPA A LA DERECHA */}
