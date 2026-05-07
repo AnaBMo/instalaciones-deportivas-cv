@@ -43,6 +43,7 @@ class InstalacionViewSet(viewsets.ViewSet):
         provincia = request.query_params.get('provincia')
         search = request.query_params.get('search')
         categoria = request.query_params.get('categoria')
+        categorias = request.query_params.get('categorias')  # ⬅️ NUEVO: Múltiples categorías
         
         # Construir filtro de MongoDB
         filtro = {}
@@ -58,9 +59,14 @@ class InstalacionViewSet(viewsets.ViewSet):
                 {'nombre': {'$regex': search, '$options': 'i'}},
                 {'direccion': {'$regex': search, '$options': 'i'}}
             ]
-        # AÑADIR: Filtro por categoría
+        # Filtro por categoría única (legacy)
         if categoria:
             filtro['categorias'] = {'$regex': categoria, '$options': 'i'}
+        
+        # ⬅️ NUEVO: Filtro por múltiples categorías
+        if categorias:
+            categorias_lista = [cat.strip() for cat in categorias.split(',')]
+            filtro['categorias'] = {'$in': categorias_lista}
         
         # Contar total con filtros
         total_count = self.collection.count_documents(filtro)
@@ -322,6 +328,7 @@ class InstalacionViewSet(viewsets.ViewSet):
             east = float(request.query_params.get('east'))
             tipo = request.query_params.get('tipo')
             search = request.query_params.get('search')
+            categorias = request.query_params.get('categorias')  # ⬅️ NUEVO
             
             # Construir filtro
             filtro = {
@@ -337,6 +344,11 @@ class InstalacionViewSet(viewsets.ViewSet):
                     {'nombre': {'$regex': search, '$options': 'i'}},
                     {'direccion': {'$regex': search, '$options': 'i'}}
                 ]
+            
+            # ⬅️ NUEVO: Filtro por categorías
+            if categorias:
+                categorias_lista = [cat.strip() for cat in categorias.split(',')]
+                filtro['categorias'] = {'$in': categorias_lista}
             
             # Limitar a 500 resultados máximo
             instalaciones = list(self.collection.find(filtro).limit(500))

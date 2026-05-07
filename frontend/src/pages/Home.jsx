@@ -10,10 +10,42 @@ function Home() {
   const [totalGeneral, setTotalGeneral] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
   const [porTipo, setPorTipo] = useState({});
+  
+  // Filtros
   const [filtros, setFiltros] = useState({
     tipo: '',
     search: '',
+    categorias: [], 
   });
+
+  // Estado de expansión de filtros
+  const [categoriasExpanded, setCategoriasExpanded] = useState(false);
+
+  // Definir categorías disponibles
+  const CATEGORIAS_PRIVADAS = [
+    { id: 'Fitness', nombre: 'Fitness y Gimnasios', count: 0 },
+    { id: 'Deportes Generales', nombre: 'Deportes Generales', count: 0 },
+    { id: 'Artes Marciales', nombre: 'Artes Marciales y Boxeo', count: 0 },
+    { id: 'Natación', nombre: 'Natación', count: 0 },
+    { id: 'Danza', nombre: 'Danza', count: 0 },
+    { id: 'Pádel y Tenis', nombre: 'Pádel y Tenis', count: 0 },
+    { id: 'Equitación', nombre: 'Equitación', count: 0 },
+    { id: 'Skating', nombre: 'Skating', count: 0 },
+    { id: 'Golf', nombre: 'Golf', count: 0 },
+    { id: 'Escalada', nombre: 'Escalada', count: 0 },
+  ];
+
+  const CATEGORIAS_TIENDAS = [
+    { id: 'tienda_deportiva', nombre: 'Deportiva', count: 0 },
+    { id: 'tienda_naturaleza', nombre: 'Naturaleza y Caza', count: 0 },
+    { id: 'tienda_ciclismo', nombre: 'Ciclismo', count: 0 },
+    { id: 'tienda_nutricion', nombre: 'Nutrición Deportiva', count: 0 },
+    { id: 'tienda_running', nombre: 'Running', count: 0 },
+    { id: 'tienda_padel', nombre: 'Pádel', count: 0 },
+    { id: 'tienda_acuatica', nombre: 'Deportes Acuáticos', count: 0 },
+    { id: 'tienda_golf', nombre: 'Golf', count: 0 },
+    { id: 'tienda_skate', nombre: 'Skate', count: 0 },
+  ];
 
   // Cargar total general solo al inicio
   useEffect(() => {
@@ -32,20 +64,64 @@ function Home() {
     };
 
     cargarTotalGeneral();
-  }, []); // Solo al montar el componente
+  }, []);
 
-  // Callback estable que NO cambia entre renders
+  // Callback estable para actualizar contadores
   const handleMapUpdate = useCallback((instalaciones) => {
     setVisibleCount(instalaciones.length);
     
-    // Calcular stats por tipo de las instalaciones visibles
     const nuevosPorTipo = instalaciones.reduce((acc, inst) => {
       acc[inst.tipo] = (acc[inst.tipo] || 0) + 1;
       return acc;
     }, {});
     
     setPorTipo(nuevosPorTipo);
-  }, []); // ⬅️ Array vacío = función estable
+  }, []);
+
+  // Función para toggle de categorías
+  const toggleCategoria = (categoriaId) => {
+    setFiltros(prev => {
+      const categorias = prev.categorias.includes(categoriaId)
+        ? prev.categorias.filter(c => c !== categoriaId)
+        : [...prev.categorias, categoriaId];
+      
+      return { ...prev, categorias };
+    });
+  };
+
+  // Función para seleccionar/deseleccionar todas las categorías
+  const toggleTodasCategorias = () => {
+    const categoriasActuales = filtros.tipo === 'privado' 
+      ? CATEGORIAS_PRIVADAS.map(c => c.id)
+      : CATEGORIAS_TIENDAS.map(c => c.id);
+
+    const todasSeleccionadas = categoriasActuales.every(cat => 
+      filtros.categorias.includes(cat)
+    );
+
+    if (todasSeleccionadas) {
+      // Deseleccionar todas
+      setFiltros(prev => ({
+        ...prev,
+        categorias: prev.categorias.filter(c => !categoriasActuales.includes(c))
+      }));
+    } else {
+      // Seleccionar todas
+      setFiltros(prev => ({
+        ...prev,
+        categorias: [...new Set([...prev.categorias, ...categoriasActuales])]
+      }));
+    }
+  };
+
+  // Obtener categorías según el tipo seleccionado
+  const categoriasActuales = filtros.tipo === 'privado' 
+    ? CATEGORIAS_PRIVADAS 
+    : filtros.tipo === 'tienda' 
+    ? CATEGORIAS_TIENDAS 
+    : [];
+
+  const mostrarFiltrosCategorias = filtros.tipo === 'privado' || filtros.tipo === 'tienda';
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -159,7 +235,7 @@ function Home() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: '' })}
+              onClick={() => setFiltros({ ...filtros, tipo: '', categorias: [] })}
               style={{
                 padding: '8px 14px',
                 border: filtros.tipo === '' ? '2px solid #2563eb' : '2px solid #e5e7eb',
@@ -175,7 +251,7 @@ function Home() {
               Todas
             </button>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'publico' })}
+              onClick={() => setFiltros({ ...filtros, tipo: 'publico', categorias: [] })}
               style={{
                 padding: '8px 14px',
                 border: filtros.tipo === 'publico' ? '2px solid #10b981' : '2px solid #e5e7eb',
@@ -191,7 +267,17 @@ function Home() {
               🏛️ Públicas ({porTipo.publico || 0})
             </button>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'privado' })}
+              onClick={() => {
+                const nuevoTipo = filtros.tipo === 'privado' ? '' : 'privado';
+                setFiltros({ 
+                  ...filtros, 
+                  tipo: nuevoTipo,
+                  categorias: nuevoTipo === 'privado' ? filtros.categorias : []
+                });
+                if (nuevoTipo === 'privado') {
+                  setCategoriasExpanded(true);
+                }
+              }}
               style={{
                 padding: '8px 14px',
                 border: filtros.tipo === 'privado' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
@@ -207,7 +293,17 @@ function Home() {
               🏢 Privadas ({porTipo.privado || 0})
             </button>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'tienda' })}
+              onClick={() => {
+                const nuevoTipo = filtros.tipo === 'tienda' ? '' : 'tienda';
+                setFiltros({ 
+                  ...filtros, 
+                  tipo: nuevoTipo,
+                  categorias: nuevoTipo === 'tienda' ? filtros.categorias : []
+                });
+                if (nuevoTipo === 'tienda') {
+                  setCategoriasExpanded(true);
+                }
+              }}
               style={{
                 padding: '8px 14px',
                 border: filtros.tipo === 'tienda' ? '2px solid #6b7280' : '2px solid #e5e7eb',
@@ -223,7 +319,7 @@ function Home() {
               🛒 Tiendas ({porTipo.tienda || 0})
             </button>
             <button
-              onClick={() => setFiltros({ ...filtros, tipo: 'camping' })}
+              onClick={() => setFiltros({ ...filtros, tipo: 'camping', categorias: [] })}
               style={{
                 padding: '8px 14px',
                 border: filtros.tipo === 'camping' ? '2px solid #f59e0b' : '2px solid #e5e7eb',
@@ -240,6 +336,87 @@ function Home() {
             </button>
           </div>
         </div>
+
+        {/* FILTROS POR CATEGORÍAS */}
+        {mostrarFiltrosCategorias && (
+          <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
+            <div 
+              style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '10px'
+              }}
+            >
+              <div style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>
+                {filtros.tipo === 'privado' ? '🏢 CATEGORÍAS PRIVADAS' : '🛒 CATEGORÍAS TIENDAS'}
+              </div>
+              <button
+                onClick={() => setCategoriasExpanded(!categoriasExpanded)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                }}
+              >
+                {categoriasExpanded ? '▼ Ocultar' : '▶ Mostrar'}
+              </button>
+            </div>
+
+            {categoriasExpanded && (
+              <>
+                <button
+                  onClick={toggleTodasCategorias}
+                  style={{
+                    width: '100%',
+                    padding: '8px 14px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '6px',
+                    background: '#f3f4f6',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    marginBottom: '8px',
+                  }}
+                >
+                  ✓ Todas
+                </button>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {categoriasActuales.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleCategoria(cat.id)}
+                      style={{
+                        width: 'calc(50% - 2px)',
+                        padding: '6px 10px',
+                        border: filtros.categorias.includes(cat.id) 
+                          ? '2px solid #93c5fd' 
+                          : '2px solid #e5e7eb',
+                        borderRadius: '6px',
+                        background: filtros.categorias.includes(cat.id) 
+                          ? '#93c5fd' 
+                          : 'white',
+                        color: filtros.categorias.includes(cat.id) 
+                          ? '#1e3a8a' 
+                          : '#374151',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                      }}
+                    >
+                      {cat.nombre}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* LEYENDA */}
         <div style={{ padding: '15px' }}>

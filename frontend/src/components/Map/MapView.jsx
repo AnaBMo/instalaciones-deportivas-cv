@@ -101,12 +101,16 @@ function MapEventHandler({ filtros, onInstallationsLoad }) {
       east: bounds.getEast(),
     };
 
-    // Aplicar filtros solo si tienen valor
+    // Aplicar filtros
     if (filtros.tipo) {
       params.tipo = filtros.tipo;
     }
     if (filtros.search) {
       params.search = filtros.search;
+    }
+    // ⬅️ NUEVO: Filtro por categorías
+    if (filtros.categorias && filtros.categorias.length > 0) {
+      params.categorias = filtros.categorias.join(',');
     }
 
     try {
@@ -119,6 +123,7 @@ function MapEventHandler({ filtros, onInstallationsLoad }) {
 
   // Cargar instalaciones cuando cambien los filtros
   useEffect(() => {
+    console.log('🔍 Filtros cambiaron:', filtros); 
     loadVisibleInstallations();
   }, [filtros]);
 
@@ -141,7 +146,7 @@ function MapView({ filtros, onMapUpdate }) {
     if (onMapUpdate) {
       onMapUpdate(installations);
     }
-  }, [onMapUpdate]); // ⬅️ onMapUpdate es estable ahora
+  }, [onMapUpdate]);
 
   return (
     <div style={{ height: '100%', width: '100%', position: 'relative' }}>
@@ -189,41 +194,58 @@ function MapView({ filtros, onMapUpdate }) {
           zoomToBoundsOnClick={true}
           maxClusterRadius={50}
         >
-          {instalacionesVisible.map((inst) => (
-            <Marker
-              key={inst._id}
-              position={[inst.latitud, inst.longitud]}
-              icon={iconosPorTipo[inst.tipo] || iconosPorTipo.privado}
-            >
-              <Popup>
-                <div style={{ minWidth: '200px' }}>
-                  <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
-                    {inst.nombre}
-                  </h3>
-                  <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>
-                    📍 {inst.direccion}
-                  </p>
-                  <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>
-                    🏙️ {inst.denom_municipio} ({inst.denom_provincia})
-                  </p>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      marginTop: '8px',
-                      background: inst.tipo === 'publico' ? '#d1fae5' : '#dbeafe',
-                      color: inst.tipo === 'publico' ? '#065f46' : '#1e40af',
-                      padding: '4px 12px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                    }}
-                  >
-                    {inst.tipo}
-                  </span>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {instalacionesVisible.map((inst) => {
+            // Formatear categorías para mostrar en el popup
+            const categoriasTexto = inst.categorias && inst.categorias.length > 0
+              ? inst.categorias.join(', ')
+              : '';
+
+            return (
+              <Marker
+                key={inst._id}
+                position={[inst.latitud, inst.longitud]}
+                icon={iconosPorTipo[inst.tipo] || iconosPorTipo.privado}
+              >
+                <Popup>
+                  <div style={{ minWidth: '200px' }}>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold' }}>
+                      {inst.nombre}
+                    </h3>
+                    <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>
+                      📍 {inst.direccion}
+                    </p>
+                    <p style={{ margin: '5px 0', fontSize: '13px', color: '#666' }}>
+                      🏙️ {inst.denom_municipio} ({inst.denom_provincia})
+                    </p>
+                    {categoriasTexto && (
+                      <p style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
+                        🏷️ {categoriasTexto}
+                      </p>
+                    )}
+                    {inst.rating && (
+                      <p style={{ margin: '5px 0', fontSize: '13px', color: '#fbbf24' }}>
+                        ⭐ {inst.rating}
+                      </p>
+                    )}
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginTop: '8px',
+                        background: inst.tipo === 'publico' ? '#d1fae5' : '#dbeafe',
+                        color: inst.tipo === 'publico' ? '#065f46' : '#1e40af',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                      }}
+                    >
+                      {inst.tipo}
+                    </span>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
         </MarkerClusterGroup>
       </MapContainer>
     </div>
