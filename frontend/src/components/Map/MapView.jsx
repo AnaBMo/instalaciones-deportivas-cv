@@ -123,7 +123,6 @@ function MapEventHandler({ filtros, onInstallationsLoad }) {
 
   // Cargar instalaciones cuando cambien los filtros
   useEffect(() => {
-    console.log('🔍 Filtros cambiaron:', filtros); 
     loadVisibleInstallations();
   }, [filtros]);
 
