@@ -15,7 +15,7 @@ function Home() {
   const [filtros, setFiltros] = useState({
     tipo: '',
     search: '',
-    categorias: [], 
+    categorias: [],
   });
 
   // Estado de expansión de filtros
@@ -23,28 +23,28 @@ function Home() {
 
   // Definir categorías disponibles
   const CATEGORIAS_PRIVADAS = [
-    { id: 'Fitness', nombre: 'Fitness y Gimnasios', count: 0 },
-    { id: 'Deportes Generales', nombre: 'Deportes Generales', count: 0 },
-    { id: 'Artes Marciales', nombre: 'Artes Marciales y Boxeo', count: 0 },
-    { id: 'Natación', nombre: 'Natación', count: 0 },
-    { id: 'Danza', nombre: 'Danza', count: 0 },
-    { id: 'Pádel y Tenis', nombre: 'Pádel y Tenis', count: 0 },
-    { id: 'Equitación', nombre: 'Equitación', count: 0 },
-    { id: 'Skating', nombre: 'Skating', count: 0 },
-    { id: 'Golf', nombre: 'Golf', count: 0 },
-    { id: 'Escalada', nombre: 'Escalada', count: 0 },
+    { id: 'Fitness', nombre: 'Fitness y Gimnasios', count: 773 },
+    { id: 'Deportes Generales', nombre: 'Deportes Generales', count: 520 },
+    { id: 'Artes Marciales', nombre: 'Artes Marciales y Boxeo', count: 351 },
+    { id: 'Natación', nombre: 'Natación', count: 241 },
+    { id: 'Danza', nombre: 'Danza', count: 234 },
+    { id: 'Pádel y Tenis', nombre: 'Pádel y Tenis', count: 206 },
+    { id: 'Equitación', nombre: 'Equitación', count: 111 },
+    { id: 'Skating', nombre: 'Skating', count: 71 },
+    { id: 'Golf', nombre: 'Golf', count: 41 },
+    { id: 'Escalada', nombre: 'Escalada', count: 38 },
   ];
 
   const CATEGORIAS_TIENDAS = [
-    { id: 'tienda_deportiva', nombre: 'Deportiva', count: 0 },
-    { id: 'tienda_naturaleza', nombre: 'Naturaleza y Caza', count: 0 },
-    { id: 'tienda_ciclismo', nombre: 'Ciclismo', count: 0 },
-    { id: 'tienda_nutricion', nombre: 'Nutrición Deportiva', count: 0 },
-    { id: 'tienda_running', nombre: 'Running', count: 0 },
-    { id: 'tienda_padel', nombre: 'Pádel', count: 0 },
-    { id: 'tienda_acuatica', nombre: 'Deportes Acuáticos', count: 0 },
-    { id: 'tienda_golf', nombre: 'Golf', count: 0 },
-    { id: 'tienda_skate', nombre: 'Skate', count: 0 },
+    { id: 'tienda_deportiva', nombre: 'Deportiva', count: 346 },
+    { id: 'tienda_naturaleza', nombre: 'Naturaleza y Caza', count: 289 },
+    { id: 'tienda_ciclismo', nombre: 'Ciclismo', count: 256 },
+    { id: 'tienda_nutricion', nombre: 'Nutrición Deportiva', count: 139 },
+    { id: 'tienda_running', nombre: 'Running', count: 130 },
+    { id: 'tienda_padel', nombre: 'Pádel', count: 66 },
+    { id: 'tienda_acuatica', nombre: 'Deportes Acuáticos', count: 38 },
+    { id: 'tienda_golf', nombre: 'Golf', count: 30 },
+    { id: 'tienda_skate', nombre: 'Skate', count: 27 },
   ];
 
   // Cargar total general solo al inicio
@@ -123,6 +123,10 @@ function Home() {
 
   const mostrarFiltrosCategorias = filtros.tipo === 'privado' || filtros.tipo === 'tienda';
 
+  // Verificar si todas las categorías están seleccionadas
+  const todasCategoriasSeleccionadas = categoriasActuales.length > 0 && 
+    categoriasActuales.every(cat => filtros.categorias.includes(cat.id));
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       {/* PANEL LATERAL IZQUIERDO */}
@@ -139,13 +143,14 @@ function Home() {
         {/* HEADER */}
         <div
           style={{
-            background: 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+            background: '#3643ba',
             color: 'white',
-            padding: '20px',
+            padding: '15px 20px',
             textAlign: 'center',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
           }}
         >
-          <h1 style={{ margin: '0 0 5px 0', fontSize: '20px' }}>
+          <h1 style={{ margin: '0 0 3px 0', fontSize: '24px' }}>
             🏃‍♂️ Instalaciones Deportivas
           </h1>
           <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
@@ -197,21 +202,21 @@ function Home() {
         <div
           style={{
             background: '#f3f4f6',
-            padding: '15px',
+            padding: '12px 15px',
             textAlign: 'center',
             borderBottom: '2px solid #e5e7eb',
           }}
         >
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
+          <div style={{ fontSize: '13px', fontWeight: '600', color: '#51555a' }}>
             Mostrando <span style={{ color: '#2563eb', fontSize: '16px' }}>{visibleCount}</span> de{' '}
             <span style={{ fontSize: '16px' }}>{totalGeneral}</span>
           </div>
         </div>
 
-        {/* FILTROS */}
+        {/* BUSCADOR */}
         <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#374151' }}>
-            🔍 BUSCAR
+          <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+             BUSCAR
           </div>
           <input
             type="text"
@@ -220,51 +225,64 @@ function Home() {
             onChange={(e) => setFiltros({ ...filtros, search: e.target.value })}
             style={{
               width: '100%',
-              padding: '10px',
+              padding: '10px 14px',
               border: '2px solid #e5e7eb',
               borderRadius: '6px',
               fontSize: '13px',
               boxSizing: 'border-box',
+              transition: 'all 0.3s',
+            }}
+            onFocus={(e) => {
+              e.target.style.borderColor = '#2563eb';
+              e.target.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.1)';
+            }}
+            onBlur={(e) => {
+              e.target.style.borderColor = '#e5e7eb';
+              e.target.style.boxShadow = 'none';
             }}
           />
         </div>
 
+        {/* FILTRO POR TIPO */}
         <div style={{ padding: '15px', borderBottom: '1px solid #e5e7eb' }}>
-          <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#374151' }}>
-            📌 TIPO
+          <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+             TIPO
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
             <button
               onClick={() => setFiltros({ ...filtros, tipo: '', categorias: [] })}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === '' ? '2px solid #2563eb' : '2px solid #e5e7eb',
+                border: '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === '' ? '#2563eb' : 'white',
-                color: filtros.tipo === '' ? 'white' : '#374151',
+                background: filtros.tipo === '' ? 'white' : 'white',
+                color: filtros.tipo === '' ? '#51555a' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
+                boxShadow: filtros.tipo === '' ? '0 2px 4px rgba(0,0,0,0.1), inset 0 -2px 4px rgba(0,0,0,0.05)' : 'none',
+                transition: 'all 0.2s',
               }}
             >
-              Todas
+              ✓ Todas
             </button>
             <button
               onClick={() => setFiltros({ ...filtros, tipo: 'publico', categorias: [] })}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === 'publico' ? '2px solid #10b981' : '2px solid #e5e7eb',
+                border: filtros.tipo === 'publico' ? '2px solid #3643ba' : '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === 'publico' ? '#10b981' : 'white',
-                color: filtros.tipo === 'publico' ? 'white' : '#374151',
+                background: filtros.tipo === 'publico' ? '#3643ba' : 'white',
+                color: filtros.tipo === 'publico' ? '#e4e9f1' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
+                transition: 'all 0.2s',
               }}
             >
-              🏛️ Públicas ({porTipo.publico || 0})
+               Públicas ({porTipo.publico || 0})
             </button>
             <button
               onClick={() => {
@@ -280,17 +298,18 @@ function Home() {
               }}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === 'privado' ? '2px solid #3b82f6' : '2px solid #e5e7eb',
+                border: filtros.tipo === 'privado' ? '2px solid #3643ba' : '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === 'privado' ? '#3b82f6' : 'white',
-                color: filtros.tipo === 'privado' ? 'white' : '#374151',
+                background: filtros.tipo === 'privado' ? '#3643ba' : 'white',
+                color: filtros.tipo === 'privado' ? '#e4e9f1' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
+                transition: 'all 0.2s',
               }}
             >
-              🏢 Privadas ({porTipo.privado || 0})
+               Privadas ({porTipo.privado || 0})
             </button>
             <button
               onClick={() => {
@@ -306,33 +325,35 @@ function Home() {
               }}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === 'tienda' ? '2px solid #6b7280' : '2px solid #e5e7eb',
+                border: filtros.tipo === 'tienda' ? '2px solid #3643ba' : '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === 'tienda' ? '#6b7280' : 'white',
-                color: filtros.tipo === 'tienda' ? 'white' : '#374151',
+                background: filtros.tipo === 'tienda' ? '#3643ba' : 'white',
+                color: filtros.tipo === 'tienda' ? '#e4e9f1' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
+                transition: 'all 0.2s',
               }}
             >
-              🛒 Tiendas ({porTipo.tienda || 0})
+               Tiendas ({porTipo.tienda || 0})
             </button>
             <button
               onClick={() => setFiltros({ ...filtros, tipo: 'camping', categorias: [] })}
               style={{
                 padding: '8px 14px',
-                border: filtros.tipo === 'camping' ? '2px solid #f59e0b' : '2px solid #e5e7eb',
+                border: filtros.tipo === 'camping' ? '2px solid #3643ba' : '2px solid #e5e7eb',
                 borderRadius: '6px',
-                background: filtros.tipo === 'camping' ? '#f59e0b' : 'white',
-                color: filtros.tipo === 'camping' ? 'white' : '#374151',
+                background: filtros.tipo === 'camping' ? '#3643ba' : 'white',
+                color: filtros.tipo === 'camping' ? '#e4e9f1' : '#51555a',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontWeight: '600',
                 flex: '1 1 calc(50% - 3px)',
+                transition: 'all 0.2s',
               }}
             >
-              🏕️ Campings ({porTipo.camping || 0})
+               Campings ({porTipo.camping || 0})
             </button>
           </div>
         </div>
@@ -348,8 +369,8 @@ function Home() {
                 marginBottom: '10px'
               }}
             >
-              <div style={{ fontWeight: '700', fontSize: '13px', color: '#374151' }}>
-                {filtros.tipo === 'privado' ? '🏢 CATEGORÍAS PRIVADAS' : '🛒 CATEGORÍAS TIENDAS'}
+              <div style={{ fontWeight: '700', fontSize: '13px', color: '#51555a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                {filtros.tipo === 'privado' ? ' CATEGORÍAS PRIVADAS' : ' CATEGORÍAS TIENDAS'}
               </div>
               <button
                 onClick={() => setCategoriasExpanded(!categoriasExpanded)}
@@ -360,84 +381,71 @@ function Home() {
                   cursor: 'pointer',
                   fontSize: '11px',
                   fontWeight: '600',
+                  padding: 0,
                 }}
               >
                 {categoriasExpanded ? '▼ Ocultar' : '▶ Mostrar'}
               </button>
             </div>
 
-            {categoriasExpanded && (
-              <>
-                <button
-                  onClick={toggleTodasCategorias}
-                  style={{
-                    width: '100%',
-                    padding: '8px 14px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '6px',
-                    background: '#f3f4f6',
-                    color: '#374151',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                  }}
-                >
-                  ✓ Todas
-                </button>
+            <div 
+              style={{
+                maxHeight: categoriasExpanded ? '2000px' : '0',
+                overflow: 'hidden',
+                transition: categoriasExpanded ? 'max-height 0.5s ease' : 'max-height 0.3s ease',
+              }}
+            >
+              <button
+                onClick={toggleTodasCategorias}
+                style={{
+                  width: '100%',
+                  padding: '8px 14px',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '6px',
+                  background: todasCategoriasSeleccionadas ? '#f3f4f6' : 'white',
+                  color: todasCategoriasSeleccionadas ? '#3643ba' : '#51555a',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  marginBottom: '8px',
+                  boxShadow: todasCategoriasSeleccionadas ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s',
+                }}
+              >
+                ✓ Todas
+              </button>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                  {categoriasActuales.map(cat => (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {categoriasActuales.map(cat => {
+                  const isActive = filtros.categorias.includes(cat.id);
+                  return (
                     <button
                       key={cat.id}
                       onClick={() => toggleCategoria(cat.id)}
                       style={{
                         width: 'calc(50% - 2px)',
                         padding: '6px 10px',
-                        border: filtros.categorias.includes(cat.id) 
-                          ? '2px solid #93c5fd' 
-                          : '2px solid #e5e7eb',
+                        border: isActive ? '2px solid #d1d5db' : '2px solid #e5e7eb',
                         borderRadius: '6px',
-                        background: filtros.categorias.includes(cat.id) 
-                          ? '#93c5fd' 
-                          : 'white',
-                        color: filtros.categorias.includes(cat.id) 
-                          ? '#1e3a8a' 
-                          : '#374151',
+                        background: isActive ? '#f3f4f6' : 'white',
+                        color: isActive ? '#3643ba' : '#51555a',
                         cursor: 'pointer',
                         fontSize: '11px',
                         fontWeight: '600',
+                        boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                        transition: 'all 0.2s',
                       }}
                     >
                       {cat.nombre}
                     </button>
-                  ))}
-                </div>
-              </>
-            )}
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* LEYENDA */}
-        <div style={{ padding: '15px' }}>
-          <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '10px', color: '#374151' }}>
-            📖 LEYENDA
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-              <span>🏛️</span> Públicas
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-              <span>🏢</span> Privadas
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-              <span>🛒</span> Tiendas
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-              <span>🏕️</span> Campings
-            </div>
-          </div>
-        </div>
+        
       </div>
 
       {/* MAPA A LA DERECHA */}
