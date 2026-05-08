@@ -404,3 +404,87 @@ class InstalacionViewSet(viewsets.ViewSet):
                 {'error': str(e)},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+    @action(detail=False, methods=['get'], url_path='eliminadas')
+    def eliminadas(self, request):
+        """
+        GET /api/instalaciones/eliminadas/
+        Lista instalaciones eliminadas (backup)
+        Requiere autenticación
+        """
+        eliminados_collection = self.db['instalaciones_eliminadas']
+        
+        # Paginación
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 20))
+        skip = (page - 1) * page_size
+        
+        total_count = eliminados_collection.count_documents({})
+        total_pages = (total_count + page_size - 1) // page_size if total_count > 0 else 1
+        
+        cursor = eliminados_collection.find({}).sort('fecha_eliminacion', -1).skip(skip).limit(page_size)
+        resultados = list(cursor)
+        
+        for resultado in resultados:
+            resultado['_id'] = str(resultado['_id'])
+            # Convertir datetime a string para JSON
+            if 'fecha_eliminacion' in resultado and isinstance(resultado['fecha_eliminacion'], datetime):
+                resultado['fecha_eliminacion'] = resultado['fecha_eliminacion'].isoformat()
+        
+        return Response({
+            'count': total_count,
+            'page': page,
+            'page_size': page_size,
+            'total_pages': total_pages,
+            'results': resultados
+        })
+    
+    @action(detail=False, methods=['post'], url_path='eliminadas/(?P<eliminada_id>[^/.]+)/restaurar')
+    def restaurar(self, request, eliminada_id=None):
+        """
+        POST /api/instalaciones/eliminadas/{id}/restaurar/
+        Restaura una instalación eliminada
+        Requiere autenticación
+        """
+        try:
+            eliminados_collection = self.db['instalaciones_eliminadas']
+            obj_id = ObjectId(eliminada_id)
+            
+            # Buscar en eliminadas
+            eliminada = eliminados_collection.find_one({'_id': obj_id})
+            
+            if not eliminada:
+                return Response(
+                    {'error': 'Instalación eliminada no encontrada'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            # Preparar datos para restaurar (quitar campos de eliminación)
+            datos_restaurar = {k: v for k, v in eliminada.items() 
+                             if k not in ['_id', 'eliminado_por', 'eliminado_por_id', 
+                                         'fecha_eliminacion', 'razon', 'instalacion_id_original']}
+            
+            # Añadir metadata de restauración
+            datos_restaurar['restaurado_por'] = request.user.username
+            datos_restaurar['fecha_restauracion'] = datetime.now()
+            
+            # Insertar de vuelta en instalaciones
+            result = self.collection.insert_one(datos_restaurar)
+            
+            # Eliminar de la colección de eliminadas
+            eliminados_collection.delete_one({'_id': obj_id})
+            
+            # Recuperar el documento restaurado
+            restaurada = self.collection.find_one({'_id': result.inserted_id})
+            restaurada['_id'] = str(restaurada['_id'])
+            
+            return Response({
+                'message': 'Instalación restaurada correctamente',
+                'instalacion': restaurada
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

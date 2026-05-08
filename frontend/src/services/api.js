@@ -58,6 +58,8 @@ export const adminAPI = {
   create: (data) => api.post('/instalaciones/', data),
   update: (id, data) => api.put(`/instalaciones/${id}/`, data),
   delete: (id, razon) => api.delete(`/instalaciones/${id}/`, { data: { razon } }),
+  getEliminadas: (params) => api.get('/instalaciones/eliminadas/', { params }),
+  restaurar: (id) => api.post(`/instalaciones/eliminadas/${id}/restaurar/`),
 };
 
 export default api;
