@@ -149,7 +149,7 @@ function Home() {
           }}
         >
           <h1 style={{ margin: '0 0 3px 0', fontSize: '24px' }}>
-            🏃‍♂️ Instalaciones Deportivas
+            Instalaciones Deportivas
           </h1>
           <p style={{ margin: 0, fontSize: '13px', opacity: 0.9 }}>
             Comunidad Valenciana
