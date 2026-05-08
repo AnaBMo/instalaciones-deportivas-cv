@@ -11,3 +11,5 @@ python-decouple==3.8
 pytz==2026.1.post1
 sqlparse==0.5.5
 tzdata==2026.2
+gunicorn==22.0.0
+whitenoise==6.7.0
