@@ -6,6 +6,7 @@ import MapView from '../components/Map/MapView';
 function Home() {
   const { isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [slowLoading, setSlowLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalGeneral, setTotalGeneral] = useState(0);
   const [visibleCount, setVisibleCount] = useState(0);
@@ -49,22 +50,29 @@ function Home() {
 
   // Cargar total general solo al inicio
   useEffect(() => {
-    const cargarTotalGeneral = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await instalacionesAPI.getAll({ page_size: 1 });
-        setTotalGeneral(response.data.count);
-      } catch (error) {
-        console.error('Error al cargar estadísticas:', error);
-        setError('Error al cargar estadísticas. Verifica que el backend esté corriendo.');
-      } finally {
-        setLoading(false);
-      }
-    };
+      const cargarTotalGeneral = async () => {
+        try {
+          setLoading(true);
+          setSlowLoading(false);
+          setError(null);
 
-    cargarTotalGeneral();
-  }, []);
+          const timer = setTimeout(() => setSlowLoading(true), 4000);
+
+          const response = await instalacionesAPI.getAll({ page_size: 1 });
+          setTotalGeneral(response.data.count);
+
+          clearTimeout(timer);
+        } catch (error) {
+          console.error('Error al cargar estadísticas:', error);
+          setError('Error al cargar estadísticas. Verifica que el backend esté corriendo.');
+        } finally {
+          setLoading(false);
+          setSlowLoading(false);
+        }
+      };
+
+      cargarTotalGeneral();
+    }, []);
 
   // Callback estable para actualizar contadores
   const handleMapUpdate = useCallback((instalaciones) => {
@@ -492,6 +500,7 @@ function Home() {
 
       {/* MAPA A LA DERECHA */}
       <div style={{ flex: 1, position: 'relative' }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         {error && (
           <div
             style={{
@@ -511,17 +520,43 @@ function Home() {
         )}
         
         {loading ? (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-            }}
-          >
-            <p>Cargando mapa...</p>
-          </div>
-        ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      height: '100%',
+                      gap: '16px',
+                    }}
+                  >
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      border: '4px solid #e5e7eb',
+                      borderTop: '4px solid #3643ba',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                    }} />
+                    <p style={{ color: '#6b7280', fontSize: '15px', margin: 0 }}>
+                      Cargando mapa...
+                    </p>
+                    {slowLoading && (
+                      <div style={{
+                        background: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                        borderRadius: '8px',
+                        padding: '12px 20px',
+                        maxWidth: '340px',
+                        textAlign: 'center',
+                      }}>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#92400e' }}>
+                          ☕ El servidor gratuito está despertando, puede tardar hasta 30 segundos...
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
           <MapView filtros={filtros} onMapUpdate={handleMapUpdate} />
         )}
       </div>
